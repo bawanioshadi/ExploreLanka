@@ -1,98 +1,163 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+} from 'react-native';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+import { useState } from 'react';import { SafeAreaView } from 'react-native-safe-area-context';
+import {places} from '../data/places';
 
 export default function HomeScreen() {
+
+  const [searchText, setSearchText] = useState('');
+
+const filteredPlaces = places.filter((place) =>
+  place.name.toLowerCase().includes(searchText.toLowerCase()) ||
+  place.district.toLowerCase().includes(searchText.toLowerCase()) ||
+  place.category.toLowerCase().includes(searchText.toLowerCase())
+);
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <SafeAreaView style={styles.container}>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+      <ScrollView>
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+        {/* App Header */}
+        <View style={styles.header}>
+          <Text style={styles.logo}>ExploreLanka</Text>
+          <Text style={styles.subtitle}>
+            Discover the beauty of Sri Lanka 🇱🇰
+          </Text>
+        </View>
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+        {/* Welcome Section */}
+      <View style={styles.welcome}>
+        <Text style={styles.welcomeTitle}>
+          Explore New Places
+        </Text>
+
+        <Text style={styles.description}>
+          Find beautiful destinations around Sri Lanka.
+        </Text>
+
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search destinations..."
+          value={searchText}
+          onChangeText={setSearchText}
+        />
+      </View>
+
+      {filteredPlaces.map((place) => (
+
+        
+        
+  <View key={place.id} style={styles.card}>
+    <Text style={styles.placeName}>
+      {place.name}
+    </Text>
+
+    <Text style={styles.placeLocation}>
+      {place.district} District
+    </Text>
+
+    <Text>
+      {place.category}
+    </Text>
+  </View>
+))}
+
+      </ScrollView>
+
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+
+  searchInput: {
+  backgroundColor: '#FFFFFF',
+  padding: 15,
+  borderRadius: 10,
+  marginTop: 20,
+  fontSize: 15,
+  borderWidth: 1,
+  borderColor: '#DDDDDD',
+},
+
+noResults: {
+  color: '#888888',
+  fontSize: 15,
+  textAlign: 'center',
+  marginTop: 20,
+},
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
+    backgroundColor: '#F5F7FA',
   },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
+
+  header: {
+    backgroundColor: '#087E70',
+    padding: 25,
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+
+  logo: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: 'bold',
   },
-  title: {
-    textAlign: 'center',
+
+  subtitle: {
+    color: '#FFFFFF',
+    marginTop: 8,
+    fontSize: 14,
   },
-  code: {
-    textTransform: 'uppercase',
+
+  welcome: {
+    padding: 20,
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+
+  welcomeTitle: {
+    fontSize: 23,
+    fontWeight: 'bold',
+    color: '#172B4D',
+  },
+
+  description: {
+    fontSize: 15,
+    color: '#667085',
+    marginTop: 8,
+  },
+
+  section: {
+    padding: 20,
+  },
+
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#172B4D',
+  },
+
+  card: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+
+  placeName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#087E70',
+  },
+
+  placeLocation: {
+    fontSize: 14,
+    color: '#667085',
+    marginTop: 5,
   },
 });
