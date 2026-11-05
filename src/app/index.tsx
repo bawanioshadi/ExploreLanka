@@ -6,8 +6,10 @@ import {
   ScrollView,
   TextInput,
 } from 'react-native';
-
-import { useState } from 'react';import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { Pressable } from 'react-native';
+import { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {places} from '../data/places';
 
 export default function HomeScreen() {
@@ -54,7 +56,13 @@ const filteredPlaces = places.filter((place) =>
 
         
         
-  <View key={place.id} style={styles.card}>
+    <Pressable
+    key={place.id}
+    style={styles.card}
+    onPress={() => router.push({
+      pathname: '/place/[id]',
+      params: { id: String(place.id) },
+    })}  >
     <Text style={styles.placeName}>
       {place.name}
     </Text>
@@ -66,7 +74,7 @@ const filteredPlaces = places.filter((place) =>
     <Text>
       {place.category}
     </Text>
-  </View>
+  </Pressable>
 ))}
 
       </ScrollView>
