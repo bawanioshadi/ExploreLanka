@@ -10,8 +10,7 @@ import { router } from 'expo-router';
 import { Pressable } from 'react-native';
 import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {places} from '../data/places';
-
+import { places } from '../../data/places';
 export default function HomeScreen() {
 
   const [searchText, setSearchText] = useState('');
