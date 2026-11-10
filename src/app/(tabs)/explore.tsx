@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router, useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   ActivityIndicator,
@@ -28,13 +28,23 @@ type Destination = {
 };
 
 export default function ExploreScreen() {
+  const { category } = useLocalSearchParams<{ category?: string }>();
+
   const [searchText, setSearchText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-
   const [userPlaces, setUserPlaces] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load saved destinations whenever Explore screen is focused
+  // Receive category selected from Home screen
+  useEffect(() => {
+    if (category && categories.includes(category)) {
+      setSelectedCategory(category);
+    } else {
+      setSelectedCategory("All");
+    }
+  }, [category]);
+
+  // Load user-added destinations
   const loadUserPlaces = useCallback(async () => {
     try {
       setLoading(true);
@@ -95,29 +105,32 @@ export default function ExploreScreen() {
       <Text style={styles.sectionTitle}>Categories</Text>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {categories.map((category) => (
+        {categories.map((item) => (
           <Pressable
-            key={category}
+            key={item}
             style={[
               styles.categoryButton,
-              selectedCategory === category && styles.selectedCategory,
+              selectedCategory === item && styles.selectedCategory,
             ]}
-            onPress={() => setSelectedCategory(category)}
+            onPress={() => setSelectedCategory(item)}
           >
             <Text
               style={[
                 styles.categoryText,
-                selectedCategory === category && styles.selectedCategoryText,
+                selectedCategory === item && styles.selectedCategoryText,
               ]}
             >
-              {category}
+              {item}
             </Text>
           </Pressable>
         ))}
       </ScrollView>
 
       <Text style={styles.sectionTitle}>
-        Destinations ({filteredPlaces.length})
+        {selectedCategory === "All"
+          ? "All Destinations"
+          : `${selectedCategory} Destinations`}{" "}
+        ({filteredPlaces.length})
       </Text>
 
       {loading ? (
@@ -130,9 +143,7 @@ export default function ExploreScreen() {
             onPress={() => router.push(`/place/${place.id}`)}
           >
             <Text style={styles.placeName}>{place.name}</Text>
-
             <Text style={styles.district}>{place.district} District</Text>
-
             <Text style={styles.category}>{place.category}</Text>
 
             <Text style={styles.description} numberOfLines={2}>
