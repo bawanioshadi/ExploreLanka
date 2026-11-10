@@ -1,33 +1,86 @@
-import { router } from "expo-router";
-import { useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
 } from "react-native";
+
 import { places } from "../../data/places";
 
+const STORAGE_KEY = "user_destinations";
+
 const categories = ["All", "Nature", "Beach", "Historical", "Wildlife"];
+
+type Destination = {
+  id: number;
+  name: string;
+  district: string;
+  category: string;
+  description: string;
+  bestTime: string;
+  entryFee: string;
+};
 
 export default function ExploreScreen() {
   const [searchText, setSearchText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-  const filteredPlaces = places.filter((place) => {
+  const [userPlaces, setUserPlaces] = useState<Destination[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load saved destinations whenever Explore screen is focused
+  const loadUserPlaces = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const storedData = await AsyncStorage.getItem(STORAGE_KEY);
+
+      if (storedData) {
+        const parsedData: Destination[] = JSON.parse(storedData);
+        setUserPlaces(parsedData);
+      } else {
+        setUserPlaces([]);
+      }
+    } catch (error) {
+      console.error("Error loading destinations:", error);
+      setUserPlaces([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadUserPlaces();
+    }, [loadUserPlaces]),
+  );
+
+  // Combine default and user-added destinations
+  const allPlaces: Destination[] = [...places, ...userPlaces];
+
+  // Search and category filtering
+  const filteredPlaces = allPlaces.filter((place) => {
+    const search = searchText.toLowerCase().trim();
+
     const matchesSearch =
-      place.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      place.district.toLowerCase().includes(searchText.toLowerCase());
+      place.name.toLowerCase().includes(search) ||
+      place.district.toLowerCase().includes(search);
 
     const matchesCategory =
-      selectedCategory === "All" || place.category === selectedCategory;
+      selectedCategory === "All" ||
+      place.category.toLowerCase() === selectedCategory.toLowerCase();
 
     return matchesSearch && matchesCategory;
   });
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Explore Sri Lanka 🇱🇰</Text>
 
       <Text style={styles.subtitle}>Find your next favourite destination.</Text>
@@ -67,7 +120,9 @@ export default function ExploreScreen() {
         Destinations ({filteredPlaces.length})
       </Text>
 
-      {filteredPlaces.length > 0 ? (
+      {loading ? (
+        <ActivityIndicator size="large" color="#087F70" style={styles.loader} />
+      ) : filteredPlaces.length > 0 ? (
         filteredPlaces.map((place) => (
           <Pressable
             key={place.id}
@@ -75,8 +130,15 @@ export default function ExploreScreen() {
             onPress={() => router.push(`/place/${place.id}`)}
           >
             <Text style={styles.placeName}>{place.name}</Text>
+
             <Text style={styles.district}>{place.district} District</Text>
+
             <Text style={styles.category}>{place.category}</Text>
+
+            <Text style={styles.description} numberOfLines={2}>
+              {place.description}
+            </Text>
+
             <Text style={styles.viewDetails}>View Details →</Text>
           </Pressable>
         ))
@@ -91,7 +153,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F7FA",
+  },
+  content: {
     padding: 20,
+    paddingBottom: 40,
   },
   title: {
     fontSize: 26,
@@ -161,6 +226,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#333333",
     marginTop: 5,
+  },
+  description: {
+    fontSize: 14,
+    color: "#555555",
+    marginTop: 8,
+    lineHeight: 20,
+  },
+  loader: {
+    marginTop: 30,
   },
   noResults: {
     textAlign: "center",
