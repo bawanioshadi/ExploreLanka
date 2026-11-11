@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,8 +12,8 @@ import {
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
+import { DestinationImage } from "../../components/destination-image";
 import { places } from "../../data/places";
-import { placeImages } from "../../data/place-images";
 
 const FAVORITES_KEY = "favoritePlaces";
 const STORAGE_KEY = "user_destinations";
@@ -116,26 +115,17 @@ export default function PlaceDetailsScreen() {
     );
   }
 
-  const placeImage = placeImages[place.name];
-
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ title: place.name }} />
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Destination Image */}
-        {placeImage ? (
-          <Image
-            source={placeImage}
-            style={styles.destinationImage}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={styles.imagePlaceholder}>
-            <Text style={styles.placeholderText}>📍</Text>
-            <Text style={styles.placeholderText}>{place.name}</Text>
-          </View>
-        )}
+        <DestinationImage
+          name={place.name}
+          category={place.category}
+          style={styles.destinationImage}
+        />
 
         {/* Destination Name */}
         <Text style={styles.title}>{place.name}</Text>
@@ -191,27 +181,16 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     paddingBottom: 40,
+    width: "100%",
+    maxWidth: 800,
+    alignSelf: "center",
   },
   destinationImage: {
     width: "100%",
-    height: 250,
+    height: 280,
     borderRadius: 15,
     marginBottom: 20,
-  },
-  imagePlaceholder: {
-    width: "100%",
-    height: 200,
-    borderRadius: 15,
-    backgroundColor: "#DDF1ED",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  placeholderText: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#087F70",
-    marginTop: 5,
+    overflow: "hidden",
   },
   title: {
     fontSize: 25,

@@ -4,16 +4,16 @@ import { useCallback, useState } from "react";
 
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  View,
 } from "react-native";
 
 import { places } from "../../data/places";
-import { placeImages } from "../../data/place-images";
+import { DestinationImage } from "../../components/destination-image";
 
 const STORAGE_KEY = "user_destinations";
 
@@ -94,6 +94,15 @@ export default function ExploreScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.hero}>
+        <DestinationImage name="Ella" style={styles.heroImage} />
+        <View style={styles.heroShade} />
+        <View style={styles.heroCopy}>
+          <Text style={styles.heroEyebrow}>THE ISLAND IS YOURS</Text>
+          <Text style={styles.heroTitle}>Your next journey starts here</Text>
+          <Text style={styles.heroSubtitle}>Find a place that feels like you.</Text>
+        </View>
+      </View>
       <Text style={styles.title}>Explore Sri Lanka 🇱🇰</Text>
 
       <Text style={styles.subtitle}>Find your next favourite destination.</Text>
@@ -145,13 +154,11 @@ export default function ExploreScreen() {
             style={styles.card}
             onPress={() => router.push(`/place/${place.id}`)}
           >
-            {placeImages[place.name] ? (
-              <Image
-                source={placeImages[place.name]}
-                style={styles.destinationImage}
-                resizeMode="cover"
-              />
-            ) : null}
+            <DestinationImage
+              name={place.name}
+              category={place.category}
+              style={styles.destinationImage}
+            />
             <Text style={styles.placeName}>{place.name}</Text>
             <Text style={styles.district}>{place.district} District</Text>
             <Text style={styles.category}>{place.category}</Text>
@@ -176,8 +183,47 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F7FA",
   },
   content: {
+    alignItems: "center",
     padding: 20,
     paddingBottom: 40,
+  },
+  hero: {
+    width: "100%",
+    maxWidth: 920,
+    height: 205,
+    borderRadius: 20,
+    overflow: "hidden",
+    backgroundColor: "#164b43",
+    marginBottom: 8,
+  },
+  heroImage: {
+    ...StyleSheet.absoluteFill,
+  },
+  heroShade: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(8, 42, 37, 0.45)",
+  },
+  heroCopy: {
+    flex: 1,
+    justifyContent: "flex-end",
+    padding: 20,
+  },
+  heroEyebrow: {
+    color: "#D2ECE3",
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.5,
+  },
+  heroTitle: {
+    color: "#FFFFFF",
+    fontSize: 27,
+    fontWeight: "800",
+    marginTop: 7,
+  },
+  heroSubtitle: {
+    color: "#EDF7F3",
+    fontSize: 14,
+    marginTop: 5,
   },
   title: {
     fontSize: 26,
@@ -191,6 +237,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   searchInput: {
+    width: "100%",
+    maxWidth: 920,
     backgroundColor: "#FFFFFF",
     padding: 15,
     borderRadius: 10,
@@ -200,6 +248,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   sectionTitle: {
+    width: "100%",
+    maxWidth: 920,
     fontSize: 20,
     fontWeight: "bold",
     color: "#263653",
@@ -228,10 +278,17 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   card: {
+    width: "100%",
+    maxWidth: 920,
     backgroundColor: "#FFFFFF",
     padding: 20,
     borderRadius: 15,
     marginBottom: 15,
+    shadowColor: "#153C35",
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   destinationImage: {
     width: "100%",

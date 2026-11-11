@@ -4,7 +4,6 @@ import { useCallback, useState } from "react";
 
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,8 +13,8 @@ import {
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
+import { DestinationImage } from "../../components/destination-image";
 import { places } from "../../data/places";
-import { placeImages } from "../../data/place-images";
 
 const STORAGE_KEY = "user_destinations";
 
@@ -25,6 +24,13 @@ const categories = [
   { name: "Historical", icon: "🏛️" },
   { name: "Wildlife", icon: "🐘" },
 ];
+
+const categoryCovers: Record<string, string> = {
+  Nature: "Ella",
+  Beach: "Mirissa",
+  Historical: "Sigiriya",
+  Wildlife: "Yala National Park",
+};
 
 type Destination = {
   id: number;
@@ -98,13 +104,19 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         {/* App Header */}
         <View style={styles.header}>
+          <DestinationImage name="Sigiriya" style={styles.headerImage} />
+          <View style={styles.headerShade} />
           <Text style={styles.logo}>ExploreLanka 🇱🇰</Text>
           <Text style={styles.headerSubtitle}>
             Discover the beauty of Sri Lanka
           </Text>
+          <Text style={styles.heroTitle}>Find your next escape</Text>
         </View>
 
         {/* Welcome Section */}
@@ -149,6 +161,10 @@ export default function HomeScreen() {
                 style={styles.categoryCard}
                 onPress={() => openCategory(category.name)}
               >
+                <DestinationImage
+                  name={categoryCovers[category.name]}
+                  style={styles.categoryImage}
+                />
                 <Text style={styles.categoryIcon}>{category.icon}</Text>
 
                 <Text style={styles.categoryName}>{category.name}</Text>
@@ -171,13 +187,11 @@ export default function HomeScreen() {
                   style={styles.card}
                   onPress={() => openDetails(place.id)}
                 >
-                  {placeImages[place.name] ? (
-                    <Image
-                      source={placeImages[place.name]}
-                      style={styles.destinationImage}
-                      resizeMode="cover"
-                    />
-                  ) : null}
+                  <DestinationImage
+                    name={place.name}
+                    category={place.category}
+                    style={styles.destinationImage}
+                  />
                   <Text style={styles.placeName}>{place.name}</Text>
 
                   <Text style={styles.placeLocation}>
@@ -212,13 +226,11 @@ export default function HomeScreen() {
                     style={styles.card}
                     onPress={() => openDetails(place.id)}
                   >
-                    {placeImages[place.name] ? (
-                      <Image
-                        source={placeImages[place.name]}
-                        style={styles.destinationImage}
-                        resizeMode="cover"
-                      />
-                    ) : null}
+                    <DestinationImage
+                      name={place.name}
+                      category={place.category}
+                      style={styles.destinationImage}
+                    />
                     <Text style={styles.placeName}>{place.name}</Text>
 
                     <Text style={styles.placeLocation}>
@@ -268,13 +280,36 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F5F7FA",
   },
+  content: {
+    alignItems: "center",
+    paddingBottom: 24,
+  },
 
   header: {
-    backgroundColor: "#087F70",
-    padding: 25,
-    paddingTop: 30,
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
+    width: "100%",
+    maxWidth: 920,
+    height: 270,
+    alignSelf: "center",
+    justifyContent: "flex-end",
+    padding: 24,
+    marginTop: 14,
+    overflow: "hidden",
+    borderRadius: 24,
+    backgroundColor: "#164b43",
+  },
+  headerImage: {
+    ...StyleSheet.absoluteFill,
+  },
+  headerShade: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(8, 42, 37, 0.48)",
+  },
+  heroTitle: {
+    color: "#FFFFFF",
+    fontSize: 30,
+    lineHeight: 36,
+    fontWeight: "800",
+    marginTop: 18,
   },
 
   logo: {
@@ -290,6 +325,8 @@ const styles = StyleSheet.create({
   },
 
   welcome: {
+    width: "100%",
+    maxWidth: 920,
     padding: 20,
   },
 
@@ -317,6 +354,8 @@ const styles = StyleSheet.create({
   },
 
   statsCard: {
+    width: "100%",
+    maxWidth: 920,
     backgroundColor: "#E0F2EF",
     marginHorizontal: 20,
     padding: 20,
@@ -343,6 +382,9 @@ const styles = StyleSheet.create({
   },
 
   section: {
+    width: "100%",
+    maxWidth: 960,
+    alignSelf: "center",
     padding: 20,
   },
 
@@ -367,7 +409,7 @@ const styles = StyleSheet.create({
   categoryCard: {
     backgroundColor: "#FFFFFF",
     width: "48%",
-    padding: 18,
+    padding: 10,
     borderRadius: 12,
     alignItems: "center",
     borderWidth: 1,
@@ -376,6 +418,13 @@ const styles = StyleSheet.create({
 
   categoryIcon: {
     fontSize: 30,
+    marginBottom: 3,
+  },
+
+  categoryImage: {
+    width: "100%",
+    height: 78,
+    borderRadius: 9,
     marginBottom: 8,
   },
 
@@ -392,6 +441,11 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderWidth: 1,
     borderColor: "#EEEEEE",
+    shadowColor: "#153C35",
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   destinationImage: {
     width: "100%",
@@ -439,6 +493,8 @@ const styles = StyleSheet.create({
   },
 
   exploreSection: {
+    width: "100%",
+    maxWidth: 920,
     backgroundColor: "#E0F2EF",
     margin: 20,
     marginTop: 0,

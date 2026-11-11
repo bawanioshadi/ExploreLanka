@@ -12,6 +12,7 @@ import {
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
+import { DestinationImage } from "../../components/destination-image";
 import { places } from "../../data/places";
 
 const FAVORITES_KEY = "favoritePlaces";
@@ -108,6 +109,11 @@ export default function FavoritesScreen() {
           {favoritePlaces.map((place) => (
             <View key={place.id} style={styles.card}>
               <Pressable onPress={() => router.push(`/place/${place.id}`)}>
+                <DestinationImage
+                  name={place.name}
+                  category={place.category}
+                  style={styles.destinationImage}
+                />
                 <Text style={styles.placeName}>{place.name}</Text>
 
                 <Text style={styles.location}>{place.district} District</Text>
@@ -179,6 +185,12 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 15,
     marginBottom: 15,
+  },
+  destinationImage: {
+    width: "100%",
+    height: 150,
+    borderRadius: 10,
+    marginBottom: 12,
   },
   placeName: {
     fontSize: 20,
