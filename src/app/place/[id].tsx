@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,6 +17,18 @@ import { places } from "../../data/places";
 
 const FAVORITES_KEY = "favoritePlaces";
 const STORAGE_KEY = "user_destinations";
+
+// Local destination images
+const destinationImages: Record<string, any> = {
+  Sigiriya: require("../../../assets/images/sigiriya.png"),
+  Ella: require("../../../assets/images/ella.png"),
+  Mirissa: require("../../../assets/images/mirissa.png"),
+  "Galle Fort": require("../../../assets/images/galle-fort.png"),
+  "Yala National Park": require("../../../assets/images/yala.jpg"),
+  "Nine Arch Bridge": require("../../../assets/images/nine-arche.jpg"),
+  Unawatuna: require("../../../assets/images/unawatuna.jpg"),
+  Riverston: require("../../../assets/images/riverston.jpg"),
+};
 
 type Destination = {
   id: number;
@@ -40,26 +53,24 @@ export default function PlaceDetailsScreen() {
       try {
         setLoading(true);
 
-        // Load user-added destinations
         const storedData = await AsyncStorage.getItem(STORAGE_KEY);
 
         const userPlaces: Destination[] = storedData
           ? JSON.parse(storedData)
           : [];
 
-        // Combine default and user-added destinations
         const allPlaces: Destination[] = [...places, ...userPlaces];
 
-        // Find selected destination
         const selectedPlace = allPlaces.find((item) => item.id === Number(id));
 
         setPlace(selectedPlace || null);
 
-        // Load favorite IDs
         const savedFavorites = await AsyncStorage.getItem(FAVORITES_KEY);
 
         if (savedFavorites) {
           setFavoriteIds(JSON.parse(savedFavorites));
+        } else {
+          setFavoriteIds([]);
         }
       } catch (error) {
         console.error("Error loading place details:", error);
@@ -95,8 +106,9 @@ export default function PlaceDetailsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#087F70" />
+        <Text style={styles.loadingText}>Loading destination...</Text>
       </SafeAreaView>
     );
   }
@@ -105,7 +117,9 @@ export default function PlaceDetailsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <Stack.Screen options={{ title: "Destination Not Found" }} />
+
         <Text style={styles.title}>Destination not found</Text>
+
         <Text style={styles.value}>
           This destination may have been removed or does not exist.
         </Text>
@@ -113,30 +127,49 @@ export default function PlaceDetailsScreen() {
     );
   }
 
+  const placeImage = destinationImages[place.name];
+
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ title: place.name }} />
 
       <ScrollView contentContainerStyle={styles.content}>
+        {/* Destination Image */}
+        {placeImage ? (
+          <Image
+            source={placeImage}
+            style={styles.destinationImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.imagePlaceholder}>
+            <Text style={styles.placeholderText}>📍</Text>
+            <Text style={styles.placeholderText}>{place.name}</Text>
+          </View>
+        )}
+
+        {/* Destination Name */}
         <Text style={styles.title}>{place.name}</Text>
 
+        {/* Destination Information */}
         <View style={styles.infoCard}>
-          <Text style={styles.label}>District</Text>
+          <Text style={styles.label}>📍 District</Text>
           <Text style={styles.value}>{place.district}</Text>
 
-          <Text style={styles.label}>Category</Text>
+          <Text style={styles.label}>🏷️ Category</Text>
           <Text style={styles.value}>{place.category}</Text>
 
-          <Text style={styles.label}>Description</Text>
+          <Text style={styles.label}>📝 Description</Text>
           <Text style={styles.value}>{place.description}</Text>
 
-          <Text style={styles.label}>Best Time to Visit</Text>
+          <Text style={styles.label}>🕒 Best Time to Visit</Text>
           <Text style={styles.value}>{place.bestTime}</Text>
 
-          <Text style={styles.label}>Entry Fee</Text>
+          <Text style={styles.label}>🎟️ Entry Fee</Text>
           <Text style={styles.value}>{place.entryFee}</Text>
         </View>
 
+        {/* Favorite Button */}
         <Pressable
           style={[styles.favoriteButton, isFavorite && styles.removeButton]}
           onPress={toggleFavorite}
@@ -154,11 +187,42 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F7FA",
+  },
+  loadingContainer: {
+    flex: 1,
     justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F5F7FA",
+  },
+  loadingText: {
+    marginTop: 12,
+    color: "#666666",
+    fontSize: 15,
   },
   content: {
     padding: 20,
     paddingBottom: 40,
+  },
+  destinationImage: {
+    width: "100%",
+    height: 250,
+    borderRadius: 15,
+    marginBottom: 20,
+  },
+  imagePlaceholder: {
+    width: "100%",
+    height: 200,
+    borderRadius: 15,
+    backgroundColor: "#DDF1ED",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  placeholderText: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#087F70",
+    marginTop: 5,
   },
   title: {
     fontSize: 25,
