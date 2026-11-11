@@ -1,9 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,6 +13,7 @@ import {
 } from "react-native";
 
 import { places } from "../../data/places";
+import { placeImages } from "../../data/place-images";
 
 const STORAGE_KEY = "user_destinations";
 
@@ -30,19 +32,20 @@ type Destination = {
 export default function ExploreScreen() {
   const { category } = useLocalSearchParams<{ category?: string }>();
 
+  const initialCategory =
+    typeof category === "string" && categories.includes(category)
+      ? category
+      : "All";
   const [searchText, setSearchText] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
+  const [lastCategoryParam, setLastCategoryParam] = useState(category);
   const [userPlaces, setUserPlaces] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Receive category selected from Home screen
-  useEffect(() => {
-    if (category && categories.includes(category)) {
-      setSelectedCategory(category);
-    } else {
-      setSelectedCategory("All");
-    }
-  }, [category]);
+  if (category !== lastCategoryParam) {
+    setLastCategoryParam(category);
+    setSelectedCategory(initialCategory);
+  }
 
   // Load user-added destinations
   const loadUserPlaces = useCallback(async () => {
@@ -142,6 +145,13 @@ export default function ExploreScreen() {
             style={styles.card}
             onPress={() => router.push(`/place/${place.id}`)}
           >
+            {placeImages[place.name] ? (
+              <Image
+                source={placeImages[place.name]}
+                style={styles.destinationImage}
+                resizeMode="cover"
+              />
+            ) : null}
             <Text style={styles.placeName}>{place.name}</Text>
             <Text style={styles.district}>{place.district} District</Text>
             <Text style={styles.category}>{place.category}</Text>
@@ -222,6 +232,12 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 15,
     marginBottom: 15,
+  },
+  destinationImage: {
+    width: "100%",
+    height: 170,
+    borderRadius: 10,
+    marginBottom: 12,
   },
   placeName: {
     fontSize: 20,

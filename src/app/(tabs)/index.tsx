@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,6 +15,7 @@ import {
 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { places } from "../../data/places";
+import { placeImages } from "../../data/place-images";
 
 const STORAGE_KEY = "user_destinations";
 
@@ -169,6 +171,13 @@ export default function HomeScreen() {
                   style={styles.card}
                   onPress={() => openDetails(place.id)}
                 >
+                  {placeImages[place.name] ? (
+                    <Image
+                      source={placeImages[place.name]}
+                      style={styles.destinationImage}
+                      resizeMode="cover"
+                    />
+                  ) : null}
                   <Text style={styles.placeName}>{place.name}</Text>
 
                   <Text style={styles.placeLocation}>
@@ -203,6 +212,13 @@ export default function HomeScreen() {
                     style={styles.card}
                     onPress={() => openDetails(place.id)}
                   >
+                    {placeImages[place.name] ? (
+                      <Image
+                        source={placeImages[place.name]}
+                        style={styles.destinationImage}
+                        resizeMode="cover"
+                      />
+                    ) : null}
                     <Text style={styles.placeName}>{place.name}</Text>
 
                     <Text style={styles.placeLocation}>
@@ -376,6 +392,12 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderWidth: 1,
     borderColor: "#EEEEEE",
+  },
+  destinationImage: {
+    width: "100%",
+    height: 170,
+    borderRadius: 10,
+    marginBottom: 12,
   },
 
   placeName: {

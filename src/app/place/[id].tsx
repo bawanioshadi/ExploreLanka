@@ -14,21 +14,10 @@ import {
 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { places } from "../../data/places";
+import { placeImages } from "../../data/place-images";
 
 const FAVORITES_KEY = "favoritePlaces";
 const STORAGE_KEY = "user_destinations";
-
-// Local destination images
-const destinationImages: Record<string, any> = {
-  Sigiriya: require("../../../assets/images/sigiriya.png"),
-  Ella: require("../../../assets/images/ella.png"),
-  Mirissa: require("../../../assets/images/mirissa.png"),
-  "Galle Fort": require("../../../assets/images/galle-fort.png"),
-  "Yala National Park": require("../../../assets/images/yala.jpg"),
-  "Nine Arch Bridge": require("../../../assets/images/nine-arche.jpg"),
-  Unawatuna: require("../../../assets/images/unawatuna.jpg"),
-  Riverston: require("../../../assets/images/riverston.jpg"),
-};
 
 type Destination = {
   id: number;
@@ -127,7 +116,7 @@ export default function PlaceDetailsScreen() {
     );
   }
 
-  const placeImage = destinationImages[place.name];
+  const placeImage = placeImages[place.name];
 
   return (
     <SafeAreaView style={styles.container}>
