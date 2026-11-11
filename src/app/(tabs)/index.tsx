@@ -77,8 +77,7 @@ export default function HomeScreen() {
   );
 
   // Featured destinations
-  const featuredPlaces = allPlaces.slice(0, 3);
-
+  const featuredPlaces = [...userPlaces, ...places].slice(0, 3);
   // Navigate to destination details
   const openDetails = (id: number) => {
     router.push({
