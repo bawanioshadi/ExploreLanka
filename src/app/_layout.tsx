@@ -10,6 +10,10 @@ export default function RootLayout() {
         options={{
           headerShown: true,
           title: 'Destination Details',
+          headerStyle: { backgroundColor: '#F5F7FA' },
+          headerTintColor: '#087F70',
+          headerTitleStyle: { color: '#183A34', fontWeight: '700' },
+          headerShadowVisible: false,
         }}
       />
     </Stack>

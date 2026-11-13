@@ -3,34 +3,34 @@
     "name": "ExploreLanka",
     "slug": "ExploreLanka",
     "version": "1.0.0",
+    "description": "An offline guide to Sri Lanka's most beautiful places.",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/explorelanka-icon.png",
     "scheme": "explorelanka",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/explorelanka-icon.png"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#053F3A",
+        "foregroundImage": "./assets/images/explorelanka-icon.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "server",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/explorelanka-icon.png",
+      "backgroundColor": "#F5F7FA"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "backgroundColor": "#053F3A",
+          "image": "./assets/images/explorelanka-icon.png",
+          "imageWidth": 144
         }
       ]
     ],

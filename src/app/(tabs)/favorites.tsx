@@ -96,16 +96,32 @@ export default function FavoritesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>My Favorites ❤️</Text>
+      <Text style={styles.eyebrow}>YOUR COLLECTION</Text>
+      <Text style={styles.title}>Favorite places</Text>
 
       <Text style={styles.subtitle}>
         Your favourite Sri Lankan destinations.
       </Text>
 
+      <View style={styles.hero}>
+        <DestinationImage name="Unawatuna" style={styles.heroImage} />
+        <View style={styles.heroShade} />
+        <View style={styles.heroCopy}>
+          <Text style={styles.heroTitle}>Keep your island plans close</Text>
+          <Text style={styles.heroSubtitle}>
+            Places you save will be ready whenever you are.
+          </Text>
+        </View>
+      </View>
+
       {loading ? (
         <ActivityIndicator size="large" color="#087F70" style={styles.loader} />
       ) : favoritePlaces.length > 0 ? (
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        >
           {favoritePlaces.map((place) => (
             <View key={place.id} style={styles.card}>
               <Pressable onPress={() => router.push(`/place/${place.id}`)}>
@@ -164,27 +180,83 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F7FA",
-    padding: 20,
+    paddingHorizontal: 18,
+    paddingTop: 16,
+  },
+  eyebrow: {
+    color: "#087F70",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 1.5,
+    marginBottom: 6,
   },
   title: {
-    fontSize: 25,
-    fontWeight: "bold",
-    color: "#087F70",
-    marginBottom: 8,
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#183A34",
   },
   subtitle: {
-    fontSize: 15,
-    color: "#666666",
-    marginBottom: 20,
+    fontSize: 14,
+    color: "#71817D",
+    marginTop: 7,
+    marginBottom: 16,
+  },
+  hero: {
+    width: "100%",
+    maxWidth: 920,
+    height: 150,
+    alignSelf: "center",
+    borderRadius: 18,
+    overflow: "hidden",
+    backgroundColor: "#164B43",
+    marginBottom: 16,
+  },
+  heroImage: {
+    ...StyleSheet.absoluteFill,
+  },
+  heroShade: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(8, 42, 37, 0.48)",
+  },
+  heroCopy: {
+    flex: 1,
+    justifyContent: "flex-end",
+    padding: 18,
+  },
+  heroTitle: {
+    color: "#FFFFFF",
+    fontSize: 19,
+    fontWeight: "800",
+  },
+  heroSubtitle: {
+    color: "#EDF7F3",
+    fontSize: 13,
+    marginTop: 5,
+  },
+  list: {
+    width: "100%",
+    maxWidth: 960,
+    alignSelf: "center",
+  },
+  listContent: {
+    paddingBottom: 24,
   },
   loader: {
     marginTop: 40,
   },
   card: {
+    width: "100%",
     backgroundColor: "#FFFFFF",
     padding: 20,
     borderRadius: 15,
     marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#E5ECE9",
+    shadowColor: "#153C35",
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   destinationImage: {
     width: "100%",
@@ -219,14 +291,16 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   removeButton: {
-    backgroundColor: "#FFF0F0",
+    backgroundColor: "#FFF6F4",
+    borderWidth: 1,
+    borderColor: "#F6DEDA",
     padding: 12,
     borderRadius: 8,
     marginTop: 15,
     alignItems: "center",
   },
   removeButtonText: {
-    color: "#D32F2F",
+    color: "#A84F43",
     fontWeight: "bold",
     fontSize: 14,
   },
@@ -234,6 +308,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    alignSelf: "center",
+    width: "100%",
+    maxWidth: 520,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#E5ECE9",
+    padding: 24,
+    marginBottom: 20,
   },
   emptyIcon: {
     fontSize: 55,
