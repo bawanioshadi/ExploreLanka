@@ -1,6 +1,5 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   ActivityIndicator,
@@ -12,21 +11,17 @@ import {
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
+
 import { DestinationImage } from "../../components/destination-image";
 import { places } from "../../data/places";
+import type { Destination } from "../../types/destination";
 
-const FAVORITES_KEY = "favoritePlaces";
-const STORAGE_KEY = "user_destinations";
-
-type Destination = {
-  id: number;
-  name: string;
-  district: string;
-  category: string;
-  description: string;
-  bestTime: string;
-  entryFee: string;
-};
+import {
+  addFavorite,
+  getFavoriteIds,
+  getUserDestinations,
+  removeFavorite,
+} from "../../services/storage";
 
 export default function PlaceDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -35,68 +30,59 @@ export default function PlaceDetailsScreen() {
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load destination and favorites
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
 
-        const storedData = await AsyncStorage.getItem(STORAGE_KEY);
+      const userPlaces = await getUserDestinations();
+      const allPlaces: Destination[] = [...places, ...userPlaces];
 
-        const userPlaces: Destination[] = storedData
-          ? JSON.parse(storedData)
-          : [];
+      const selectedPlace = allPlaces.find((item) => item.id === Number(id));
 
-        const allPlaces: Destination[] = [...places, ...userPlaces];
+      setPlace(selectedPlace || null);
 
-        const selectedPlace = allPlaces.find((item) => item.id === Number(id));
-
-        setPlace(selectedPlace || null);
-
-        const savedFavorites = await AsyncStorage.getItem(FAVORITES_KEY);
-
-        if (savedFavorites) {
-          setFavoriteIds(JSON.parse(savedFavorites));
-        } else {
-          setFavoriteIds([]);
-        }
-      } catch (error) {
-        console.error("Error loading place details:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
+      const savedFavorites = await getFavoriteIds();
+      setFavoriteIds(savedFavorites);
+    } catch (error) {
+      console.error("Error loading destination:", error);
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const isFavorite = place ? favoriteIds.includes(place.id) : false;
 
-  // Add or remove favorite
   const toggleFavorite = async () => {
     if (!place) return;
 
-    const updatedFavorites = isFavorite
-      ? favoriteIds.filter((itemId) => itemId !== place.id)
-      : [...favoriteIds, place.id];
-
     try {
-      await AsyncStorage.setItem(
-        FAVORITES_KEY,
-        JSON.stringify(updatedFavorites),
-      );
+      if (isFavorite) {
+        await removeFavorite(place.id);
 
-      setFavoriteIds(updatedFavorites);
+        setFavoriteIds((current) =>
+          current.filter((itemId) => itemId !== place.id),
+        );
+      } else {
+        await addFavorite(place.id);
+
+        setFavoriteIds((current) =>
+          current.includes(place.id) ? current : [...current, place.id],
+        );
+      }
     } catch (error) {
-      console.error("Error saving favorites:", error);
+      console.error("Error updating favorites:", error);
     }
   };
 
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#087F70" />
-        <Text style={styles.loadingText}>Loading destination...</Text>
+        <ActivityIndicator size="large" color="#183F35" />
+        <Text style={styles.loadingText}>Preparing your destination...</Text>
       </SafeAreaView>
     );
   }
@@ -106,57 +92,133 @@ export default function PlaceDetailsScreen() {
       <SafeAreaView style={styles.container}>
         <Stack.Screen options={{ title: "Destination Not Found" }} />
 
-        <Text style={styles.title}>Destination not found</Text>
+        <View style={styles.notFoundContainer}>
+          <Text style={styles.notFoundIcon}>⌖</Text>
 
-        <Text style={styles.value}>
-          This destination may have been removed or does not exist.
-        </Text>
+          <Text style={styles.notFoundTitle}>Destination not found</Text>
+
+          <Text style={styles.notFoundText}>
+            This destination may have been removed or does not exist.
+          </Text>
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen options={{ title: place.name }} />
+      <Stack.Screen
+        options={{
+          title: place.name,
+          headerStyle: {
+            backgroundColor: "#F8F6EF",
+          },
+          headerTintColor: "#183F35",
+          headerTitleStyle: {
+            fontWeight: "700",
+          },
+        }}
+      />
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      >
         {/* Destination Image */}
-        <DestinationImage
-          name={place.name}
-          category={place.category}
-          style={styles.destinationImage}
-        />
+        <View style={styles.imageContainer}>
+          <DestinationImage
+            name={place.name}
+            category={place.category}
+            style={styles.destinationImage}
+          />
 
-        {/* Destination Name */}
-        <Text style={styles.title}>{place.name}</Text>
+          <View style={styles.imageOverlay}>
+            <Text style={styles.imageLabel}>EXPLORE SRI LANKA</Text>
+          </View>
+        </View>
 
-        {/* Destination Information */}
-        <View style={styles.infoCard}>
-          <Text style={styles.label}>📍 District</Text>
-          <Text style={styles.value}>{place.district}</Text>
+        {/* Destination Heading */}
+        <View style={styles.headingSection}>
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryText}>
+              {place.category.toUpperCase()}
+            </Text>
+          </View>
 
-          <Text style={styles.label}>🏷️ Category</Text>
-          <Text style={styles.value}>{place.category}</Text>
+          <Text style={styles.title}>{place.name}</Text>
 
-          <Text style={styles.label}>📝 Description</Text>
-          <Text style={styles.value}>{place.description}</Text>
+          <View style={styles.locationRow}>
+            <Text style={styles.locationIcon}>⌖</Text>
+            <Text style={styles.locationText}>{place.district}, Sri Lanka</Text>
+          </View>
+        </View>
 
-          <Text style={styles.label}>🕒 Best Time to Visit</Text>
-          <Text style={styles.value}>{place.bestTime}</Text>
+        {/* Description */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>About this destination</Text>
 
-          <Text style={styles.label}>🎟️ Entry Fee</Text>
-          <Text style={styles.value}>{place.entryFee}</Text>
+          <Text style={styles.description}>{place.description}</Text>
+        </View>
+
+        {/* Travel Information */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Travel Information</Text>
+
+          <View style={styles.infoGrid}>
+            <View style={styles.infoCard}>
+              <View style={styles.infoIconContainer}>
+                <Text style={styles.infoIcon}>◷</Text>
+              </View>
+
+              <Text style={styles.infoLabel}>BEST TIME TO VISIT</Text>
+
+              <Text style={styles.infoValue}>{place.bestTime}</Text>
+            </View>
+
+            <View style={styles.infoCard}>
+              <View style={styles.infoIconContainer}>
+                <Text style={styles.infoIcon}>₨</Text>
+              </View>
+
+              <Text style={styles.infoLabel}>ENTRY FEE</Text>
+
+              <Text style={styles.infoValue}>{place.entryFee}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Location Information */}
+        <View style={styles.locationCard}>
+          <View style={styles.locationCardIcon}>
+            <Text style={styles.locationCardEmoji}>📍</Text>
+          </View>
+
+          <View style={styles.locationCardContent}>
+            <Text style={styles.locationCardTitle}>Location</Text>
+
+            <Text style={styles.locationCardValue}>
+              {place.district}, Sri Lanka
+            </Text>
+          </View>
         </View>
 
         {/* Favorite Button */}
         <Pressable
-          style={[styles.favoriteButton, isFavorite && styles.removeButton]}
+          style={({ pressed }) => [
+            styles.favoriteButton,
+            isFavorite && styles.removeButton,
+            pressed && styles.buttonPressed,
+          ]}
           onPress={toggleFavorite}
         >
+          <Text style={styles.favoriteIcon}>{isFavorite ? "♥" : "♡"}</Text>
+
           <Text style={styles.favoriteButtonText}>
-            {isFavorite ? "❤️ Remove from Favorites" : "♡ Add to Favorites"}
+            {isFavorite ? "Remove from Saved Places" : "Save this Destination"}
           </Text>
         </Pressable>
+
+        <Text style={styles.footerText}>DISCOVER MORE. TRAVEL BETTER.</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -165,83 +227,280 @@ export default function PlaceDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F7FA",
+    backgroundColor: "#F8F6EF",
   },
+
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F5F7FA",
+    backgroundColor: "#F8F6EF",
   },
+
   loadingText: {
-    marginTop: 12,
-    color: "#666666",
-    fontSize: 15,
+    marginTop: 14,
+    color: "#64756D",
+    fontSize: 14,
   },
+
   content: {
-    padding: 20,
-    paddingBottom: 40,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 45,
     width: "100%",
-    maxWidth: 800,
+    maxWidth: 850,
     alignSelf: "center",
   },
+
+  imageContainer: {
+    width: "100%",
+    height: 290,
+    borderRadius: 24,
+    overflow: "hidden",
+    backgroundColor: "#E4E9E2",
+    marginBottom: 25,
+  },
+
   destinationImage: {
     width: "100%",
-    height: 300,
-    borderRadius: 22,
-    marginBottom: 22,
-    overflow: "hidden",
+    height: "100%",
+    borderRadius: 24,
   },
-  title: {
-    fontSize: 31,
+
+  imageOverlay: {
+    position: "absolute",
+    bottom: 18,
+    left: 18,
+    backgroundColor: "rgba(24, 63, 53, 0.85)",
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+
+  imageLabel: {
+    color: "#F5E8C7",
+    fontSize: 10,
     fontWeight: "800",
-    marginBottom: 15,
-    color: "#183A34",
+    letterSpacing: 1.5,
   },
+
+  headingSection: {
+    marginBottom: 27,
+  },
+
+  categoryBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#E8EFE8",
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    borderRadius: 30,
+    marginBottom: 12,
+  },
+
+  categoryText: {
+    color: "#315D49",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.2,
+  },
+
+  title: {
+    color: "#183F35",
+    fontSize: 32,
+    fontWeight: "800",
+    letterSpacing: -0.7,
+    lineHeight: 39,
+  },
+
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+  },
+
+  locationIcon: {
+    fontSize: 20,
+    color: "#B28A45",
+    marginRight: 7,
+  },
+
+  locationText: {
+    fontSize: 14,
+    color: "#75827A",
+    fontWeight: "500",
+  },
+
+  section: {
+    marginBottom: 27,
+  },
+
+  sectionTitle: {
+    fontSize: 19,
+    fontWeight: "800",
+    color: "#183F35",
+    marginBottom: 13,
+  },
+
+  description: {
+    fontSize: 15,
+    lineHeight: 26,
+    color: "#596B61",
+  },
+
+  infoGrid: {
+    flexDirection: "row",
+    gap: 12,
+  },
+
   infoCard: {
+    flex: 1,
     backgroundColor: "#FFFFFF",
-    padding: 22,
-    borderRadius: 20,
+    borderRadius: 18,
+    padding: 16,
     borderWidth: 1,
-    borderColor: "#E5ECE9",
-    shadowColor: "#153C35",
-    shadowOpacity: 0.05,
+    borderColor: "#E9E9DF",
+    minHeight: 155,
+  },
+
+  infoIconContainer: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#F3EBD9",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+
+  infoIcon: {
+    fontSize: 22,
+    color: "#A27C3E",
+    fontWeight: "700",
+  },
+
+  infoLabel: {
+    fontSize: 9,
+    fontWeight: "800",
+    letterSpacing: 0.9,
+    color: "#849087",
+    marginBottom: 8,
+  },
+
+  infoValue: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#25483B",
+    lineHeight: 21,
+  },
+
+  locationCard: {
+    backgroundColor: "#EDF1E9",
+    borderRadius: 17,
+    padding: 17,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 25,
+  },
+
+  locationCardIcon: {
+    width: 45,
+    height: 45,
+    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 13,
+  },
+
+  locationCardEmoji: {
+    fontSize: 20,
+  },
+
+  locationCardContent: {
+    flex: 1,
+  },
+
+  locationCardTitle: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#25483B",
+    marginBottom: 4,
+  },
+
+  locationCardValue: {
+    fontSize: 13,
+    color: "#718078",
+  },
+
+  favoriteButton: {
+    backgroundColor: "#183F35",
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 10,
+    shadowColor: "#183F35",
+    shadowOpacity: 0.16,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 5 },
-    elevation: 2,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 0.8,
-    marginTop: 18,
-    color: "#087F70",
-    textTransform: "uppercase",
-  },
-  value: {
-    fontSize: 16,
-    marginTop: 6,
-    color: "#344B45",
-    lineHeight: 24,
-  },
-  favoriteButton: {
-    backgroundColor: "#087F70",
-    padding: 16,
-    borderRadius: 14,
-    marginTop: 25,
-    alignItems: "center",
-    shadowColor: "#087F70",
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
+
   removeButton: {
-    backgroundColor: "#555555",
+    backgroundColor: "#8B6542",
   },
+
+  buttonPressed: {
+    opacity: 0.82,
+    transform: [{ scale: 0.98 }],
+  },
+
+  favoriteIcon: {
+    color: "#F5E8C7",
+    fontSize: 23,
+  },
+
   favoriteButtonText: {
     color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+
+  footerText: {
+    textAlign: "center",
+    marginTop: 27,
+    color: "#A49C87",
+    fontSize: 9,
+    fontWeight: "800",
+    letterSpacing: 2,
+  },
+
+  notFoundContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 30,
+  },
+
+  notFoundIcon: {
+    fontSize: 55,
+    color: "#B28A45",
+    marginBottom: 15,
+  },
+
+  notFoundTitle: {
+    fontSize: 23,
+    fontWeight: "800",
+    color: "#183F35",
+    marginBottom: 10,
+  },
+
+  notFoundText: {
+    fontSize: 14,
+    color: "#75827A",
+    textAlign: "center",
+    lineHeight: 23,
   },
 });

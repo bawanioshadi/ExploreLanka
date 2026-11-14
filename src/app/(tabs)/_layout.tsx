@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
-import { Image, Text } from "react-native";
 import type { ColorValue } from "react-native";
+import { Image, Text } from "react-native";
 import { tabIcons } from "../../data/tab-icons";
 
 function DestinationTabIcon({
@@ -8,7 +8,7 @@ function DestinationTabIcon({
   color,
   size,
 }: {
-  route: "home" | "explore" | "add" | "favorites";
+  route: "home" | "explore" | "favorites" | "profile";
   color: ColorValue;
   size: number;
 }) {
@@ -27,10 +27,15 @@ function DestinationTabIcon({
 
   return (
     <Text
-      style={{ color, fontSize: size + 2, lineHeight: size + 4, fontWeight: "600" }}
+      style={{
+        color,
+        fontSize: size + 3,
+        lineHeight: size + 5,
+        fontWeight: "600",
+      }}
       accessibilityLabel={route}
     >
-      {route === "add" ? "+" : "\u2661"}
+      {route === "favorites" ? "♡" : "♙"}
     </Text>
   );
 }
@@ -40,11 +45,11 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#087F70",
+        tabBarActiveTintColor: "#183F35",
         tabBarInactiveTintColor: "#899792",
         tabBarStyle: {
           backgroundColor: "#FFFFFF",
-          borderTopColor: "#E5ECE9",
+          borderTopColor: "#E8E5DA",
           paddingTop: 7,
           paddingBottom: 6,
         },
@@ -75,21 +80,21 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="add"
+        name="favorites"
         options={{
-          title: "Add",
+          title: "Saved",
           tabBarIcon: ({ color, size }) => (
-            <DestinationTabIcon route="add" color={color} size={size} />
+            <DestinationTabIcon route="favorites" color={color} size={size} />
           ),
         }}
       />
 
       <Tabs.Screen
-        name="favorites"
+        name="profile"
         options={{
-          title: "Favorites",
+          title: "Profile",
           tabBarIcon: ({ color, size }) => (
-            <DestinationTabIcon route="favorites" color={color} size={size} />
+            <DestinationTabIcon route="profile" color={color} size={size} />
           ),
         }}
       />

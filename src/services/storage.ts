@@ -4,6 +4,33 @@ import type { Destination } from "../types/destination";
 // Storage Keys
 const USER_DESTINATIONS_KEY = "user_destinations";
 const FAVORITES_KEY = "favoritePlaces";
+const PROFILE_NAME_KEY = "profileName";
+
+// ----------------------------------
+// USER PROFILE
+// ----------------------------------
+
+// Get saved profile name
+export const getProfileName = async (): Promise<string> => {
+  try {
+    const storedName = await AsyncStorage.getItem(PROFILE_NAME_KEY);
+
+    return storedName || "Travel Explorer";
+  } catch (error) {
+    console.error("Error loading profile name:", error);
+    return "Travel Explorer";
+  }
+};
+
+// Save profile name
+export const saveProfileName = async (name: string): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(PROFILE_NAME_KEY, name.trim());
+  } catch (error) {
+    console.error("Error saving profile name:", error);
+    throw error;
+  }
+};
 
 // ----------------------------------
 // USER DESTINATIONS
