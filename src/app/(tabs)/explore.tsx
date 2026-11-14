@@ -1,7 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useState } from "react";
-
 import {
   ActivityIndicator,
   Pressable,
@@ -10,56 +6,67 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from "react-native";
 
-import { places } from "../../data/places";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
 import { DestinationImage } from "../../components/destination-image";
+import { places } from "../../data/places";
+import { getUserDestinations } from "../../services/storage";
+import type { Destination } from "../../types/destination";
 
-const STORAGE_KEY = "user_destinations";
+const categories = [
+  "All",
+  "Nature",
+  "Beach",
+  "Historical",
+  "Wildlife",
+] as const;
 
-const categories = ["All", "Nature", "Beach", "Historical", "Wildlife"];
+type CategoryFilter = (typeof categories)[number];
+type SortOption = "Name" | "District";
+type ViewMode = "Grid" | "List";
 
-type Destination = {
-  id: number;
-  name: string;
-  district: string;
-  category: string;
-  description: string;
-  bestTime: string;
-  entryFee: string;
+const COLORS = {
+  background: "#F7F5EF",
+  forest: "#173F35",
+  green: "#285D4C",
+  gold: "#C9A45C",
+  ivory: "#FFFFFF",
+  muted: "#82918A",
+  border: "#E8E5DC",
+  lightGreen: "#E6EFE8",
 };
 
 export default function ExploreScreen() {
   const { category } = useLocalSearchParams<{ category?: string }>();
+  const { width } = useWindowDimensions();
 
-  const initialCategory =
-    typeof category === "string" && categories.includes(category)
-      ? category
+  const initialCategory: CategoryFilter =
+    typeof category === "string" &&
+    categories.includes(category as CategoryFilter)
+      ? (category as CategoryFilter)
       : "All";
+
   const [searchText, setSearchText] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
-  const [lastCategoryParam, setLastCategoryParam] = useState(category);
+  const [selectedCategory, setSelectedCategory] =
+    useState<CategoryFilter>(initialCategory);
   const [userPlaces, setUserPlaces] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<SortOption>("Name");
+  const [viewMode, setViewMode] = useState<ViewMode>("Grid");
 
-  if (category !== lastCategoryParam) {
-    setLastCategoryParam(category);
+  useEffect(() => {
     setSelectedCategory(initialCategory);
-  }
+  }, [category]);
 
-  // Load user-added destinations
   const loadUserPlaces = useCallback(async () => {
     try {
       setLoading(true);
-
-      const storedData = await AsyncStorage.getItem(STORAGE_KEY);
-
-      if (storedData) {
-        const parsedData: Destination[] = JSON.parse(storedData);
-        setUserPlaces(parsedData);
-      } else {
-        setUserPlaces([]);
-      }
+      const storedPlaces = await getUserDestinations();
+      setUserPlaces(storedPlaces);
     } catch (error) {
       console.error("Error loading destinations:", error);
       setUserPlaces([]);
@@ -74,104 +81,262 @@ export default function ExploreScreen() {
     }, [loadUserPlaces]),
   );
 
-  // Combine default and user-added destinations
-  const allPlaces: Destination[] = [...places, ...userPlaces];
+  const allPlaces = useMemo(() => [...places, ...userPlaces], [userPlaces]);
 
-  // Search and category filtering
-  const filteredPlaces = allPlaces.filter((place) => {
+  const filteredPlaces = useMemo(() => {
     const search = searchText.toLowerCase().trim();
 
-    const matchesSearch =
-      place.name.toLowerCase().includes(search) ||
-      place.district.toLowerCase().includes(search);
+    const result = allPlaces.filter((place) => {
+      const matchesSearch =
+        place.name.toLowerCase().includes(search) ||
+        place.district.toLowerCase().includes(search);
 
-    const matchesCategory =
-      selectedCategory === "All" ||
-      place.category.toLowerCase() === selectedCategory.toLowerCase();
+      const matchesCategory =
+        selectedCategory === "All" || place.category === selectedCategory;
 
-    return matchesSearch && matchesCategory;
-  });
+      return matchesSearch && matchesCategory;
+    });
+
+    return [...result].sort((a, b) => {
+      if (sortBy === "Name") {
+        return a.name.localeCompare(b.name);
+      }
+
+      return a.district.localeCompare(b.district);
+    });
+  }, [allPlaces, searchText, selectedCategory, sortBy]);
+
+  const cardWidth = width >= 1000 ? "31.8%" : width >= 650 ? "48.5%" : "100%";
+
+  const openDestination = (id: number) => {
+    router.push(`/place/${id}`);
+  };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.hero}>
-        <DestinationImage name="Ella" style={styles.heroImage} />
-        <View style={styles.heroShade} />
-        <View style={styles.heroCopy}>
-          <Text style={styles.heroEyebrow}>THE ISLAND IS YOURS</Text>
-          <Text style={styles.heroTitle}>Your next journey starts here</Text>
-          <Text style={styles.heroSubtitle}>Find a place that feels like you.</Text>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.eyebrow}>DISCOVER THE ISLAND</Text>
+          <Text style={styles.pageTitle}>Explore Sri Lanka</Text>
+          <Text style={styles.headerSubtitle}>
+            Find places worth remembering.
+          </Text>
         </View>
+
+        <Pressable style={styles.addButton} onPress={() => router.push("/add")}>
+          <Text style={styles.addButtonText}>+ Add Place</Text>
+        </Pressable>
       </View>
-      <Text style={styles.title}>Explore Sri Lanka 🇱🇰</Text>
 
-      <Text style={styles.subtitle}>Find your next favourite destination.</Text>
+      {/* Search */}
+      <View style={styles.searchContainer}>
+        <Text style={styles.searchIcon}>⌕</Text>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search destinations or districts..."
+          placeholderTextColor="#98A29C"
+          value={searchText}
+          onChangeText={setSearchText}
+          returnKeyType="search"
+        />
 
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Search by name or district..."
-        value={searchText}
-        onChangeText={setSearchText}
-      />
+        {searchText.length > 0 && (
+          <Pressable onPress={() => setSearchText("")}>
+            <Text style={styles.clearButton}>✕</Text>
+          </Pressable>
+        )}
+      </View>
 
-      <Text style={styles.sectionTitle}>Categories</Text>
+      {/* Categories */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Explore by category</Text>
+      </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {categories.map((item) => (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.categoryContainer}
+      >
+        {categories.map((item) => {
+          const active = selectedCategory === item;
+
+          return (
+            <Pressable
+              key={item}
+              onPress={() => setSelectedCategory(item)}
+              style={[
+                styles.categoryButton,
+                active && styles.activeCategoryButton,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.categoryText,
+                  active && styles.activeCategoryText,
+                ]}
+              >
+                {item}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {/* Results header */}
+      <View style={styles.resultsHeader}>
+        <View>
+          <Text style={styles.sectionTitle}>Destinations</Text>
+          <Text style={styles.resultsSubtitle}>
+            {filteredPlaces.length} places to discover
+          </Text>
+        </View>
+
+        <View style={styles.viewControls}>
           <Pressable
-            key={item}
             style={[
-              styles.categoryButton,
-              selectedCategory === item && styles.selectedCategory,
+              styles.viewButton,
+              viewMode === "Grid" && styles.activeViewButton,
             ]}
-            onPress={() => setSelectedCategory(item)}
+            onPress={() => setViewMode("Grid")}
           >
             <Text
               style={[
-                styles.categoryText,
-                selectedCategory === item && styles.selectedCategoryText,
+                styles.viewButtonText,
+                viewMode === "Grid" && styles.activeViewButtonText,
               ]}
             >
-              {item}
+              ▦
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[
+              styles.viewButton,
+              viewMode === "List" && styles.activeViewButton,
+            ]}
+            onPress={() => setViewMode("List")}
+          >
+            <Text
+              style={[
+                styles.viewButtonText,
+                viewMode === "List" && styles.activeViewButtonText,
+              ]}
+            >
+              ☰
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {/* Sort */}
+      <View style={styles.sortContainer}>
+        <Text style={styles.sortLabel}>SORT BY</Text>
+
+        {(["Name", "District"] as SortOption[]).map((option) => (
+          <Pressable
+            key={option}
+            onPress={() => setSortBy(option)}
+            style={[
+              styles.sortButton,
+              sortBy === option && styles.activeSortButton,
+            ]}
+          >
+            <Text
+              style={[
+                styles.sortButtonText,
+                sortBy === option && styles.activeSortButtonText,
+              ]}
+            >
+              {option}
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </View>
 
-      <Text style={styles.sectionTitle}>
-        {selectedCategory === "All"
-          ? "All Destinations"
-          : `${selectedCategory} Destinations`}{" "}
-        ({filteredPlaces.length})
-      </Text>
-
+      {/* Destination cards */}
       {loading ? (
-        <ActivityIndicator size="large" color="#087F70" style={styles.loader} />
+        <ActivityIndicator
+          size="large"
+          color={COLORS.green}
+          style={styles.loader}
+        />
       ) : filteredPlaces.length > 0 ? (
-        filteredPlaces.map((place) => (
-          <Pressable
-            key={place.id}
-            style={styles.card}
-            onPress={() => router.push(`/place/${place.id}`)}
-          >
-            <DestinationImage
-              name={place.name}
-              category={place.category}
-              style={styles.destinationImage}
-            />
-            <Text style={styles.placeName}>{place.name}</Text>
-            <Text style={styles.district}>{place.district} District</Text>
-            <Text style={styles.category}>{place.category}</Text>
+        <View style={styles.destinationContainer}>
+          {filteredPlaces.map((place) => (
+            <Pressable
+              key={place.id}
+              style={[
+                styles.destinationCard,
+                {
+                  width: viewMode === "List" ? "100%" : cardWidth,
+                  flexDirection: viewMode === "List" ? "row" : "column",
+                },
+              ]}
+              onPress={() => openDestination(place.id)}
+            >
+              <View
+                style={[
+                  styles.imageContainer,
+                  viewMode === "List" && styles.listImageContainer,
+                ]}
+              >
+                <DestinationImage
+                  name={place.name}
+                  category={place.category}
+                  style={styles.destinationImage}
+                />
 
-            <Text style={styles.description} numberOfLines={2}>
-              {place.description}
-            </Text>
+                <View style={styles.imageBadge}>
+                  <Text style={styles.imageBadgeText}>{place.category}</Text>
+                </View>
+              </View>
 
-            <Text style={styles.viewDetails}>View Details →</Text>
-          </Pressable>
-        ))
+              <View style={styles.cardContent}>
+                <Text style={styles.destinationName} numberOfLines={1}>
+                  {place.name}
+                </Text>
+
+                <Text style={styles.districtText}>
+                  ◉ {place.district} District
+                </Text>
+
+                <Text
+                  style={styles.description}
+                  numberOfLines={viewMode === "List" ? 3 : 2}
+                >
+                  {place.description}
+                </Text>
+
+                <View style={styles.cardFooter}>
+                  <Text style={styles.detailsText}>Explore place →</Text>
+                </View>
+              </View>
+            </Pressable>
+          ))}
+        </View>
       ) : (
-        <Text style={styles.noResults}>No destinations found.</Text>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyIcon}>⌕</Text>
+          <Text style={styles.emptyTitle}>No places found</Text>
+          <Text style={styles.emptySubtitle}>
+            Try another search or category.
+          </Text>
+
+          <Pressable
+            style={styles.resetButton}
+            onPress={() => {
+              setSearchText("");
+              setSelectedCategory("All");
+            }}
+          >
+            <Text style={styles.resetButtonText}>Clear filters</Text>
+          </Pressable>
+        </View>
       )}
     </ScrollView>
   );
@@ -180,155 +345,340 @@ export default function ExploreScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F7FA",
+    backgroundColor: COLORS.background,
   },
+
   content: {
+    paddingHorizontal: 24,
+    paddingTop: 30,
+    paddingBottom: 60,
     alignItems: "center",
-    padding: 20,
-    paddingBottom: 40,
   },
-  hero: {
+
+  header: {
     width: "100%",
-    maxWidth: 920,
-    height: 205,
-    borderRadius: 20,
-    overflow: "hidden",
-    backgroundColor: "#164b43",
+    maxWidth: 1200,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 28,
+  },
+
+  eyebrow: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 2.5,
+    color: COLORS.gold,
     marginBottom: 8,
   },
-  heroImage: {
-    ...StyleSheet.absoluteFill,
+
+  pageTitle: {
+    fontSize: 30,
+    fontWeight: "900",
+    color: COLORS.forest,
   },
-  heroShade: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(8, 42, 37, 0.45)",
-  },
-  heroCopy: {
-    flex: 1,
-    justifyContent: "flex-end",
-    padding: 20,
-  },
-  heroEyebrow: {
-    color: "#D2ECE3",
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1.5,
-  },
-  heroTitle: {
-    color: "#FFFFFF",
-    fontSize: 27,
-    fontWeight: "800",
+
+  headerSubtitle: {
+    fontSize: 14,
+    color: COLORS.muted,
     marginTop: 7,
   },
-  heroSubtitle: {
-    color: "#EDF7F3",
+
+  addButton: {
+    backgroundColor: COLORS.forest,
+    paddingHorizontal: 18,
+    paddingVertical: 13,
+    borderRadius: 12,
+  },
+
+  addButtonText: {
+    color: COLORS.ivory,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+
+  searchContainer: {
+    width: "100%",
+    maxWidth: 1200,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.ivory,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    height: 56,
+  },
+
+  searchIcon: {
+    fontSize: 27,
+    color: COLORS.green,
+    marginRight: 10,
+  },
+
+  searchInput: {
+    flex: 1,
     fontSize: 14,
+    color: COLORS.forest,
+    height: "100%",
+  },
+
+  clearButton: {
+    color: COLORS.muted,
+    fontSize: 17,
+    padding: 8,
+  },
+
+  sectionHeader: {
+    width: "100%",
+    maxWidth: 1200,
+    marginTop: 32,
+    marginBottom: 14,
+  },
+
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: COLORS.forest,
+  },
+
+  categoryContainer: {
+    width: "100%",
+    maxWidth: 1200,
+    paddingBottom: 8,
+  },
+
+  categoryButton: {
+    paddingHorizontal: 19,
+    paddingVertical: 11,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.ivory,
+    marginRight: 10,
+  },
+
+  activeCategoryButton: {
+    backgroundColor: COLORS.forest,
+    borderColor: COLORS.forest,
+  },
+
+  categoryText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: COLORS.green,
+  },
+
+  activeCategoryText: {
+    color: COLORS.ivory,
+  },
+
+  resultsHeader: {
+    width: "100%",
+    maxWidth: 1200,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 30,
+    marginBottom: 15,
+  },
+
+  resultsSubtitle: {
+    fontSize: 12,
+    color: COLORS.muted,
     marginTop: 5,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: "bold",
-    color: "#087F70",
-    marginTop: 20,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#666666",
-    marginTop: 8,
-  },
-  searchInput: {
-    width: "100%",
-    maxWidth: 920,
-    backgroundColor: "#FFFFFF",
-    padding: 15,
+
+  viewControls: {
+    flexDirection: "row",
+    backgroundColor: "#ECEAE2",
     borderRadius: 10,
-    marginTop: 20,
-    borderWidth: 1,
-    borderColor: "#DDDDDD",
-    fontSize: 16,
+    padding: 3,
   },
-  sectionTitle: {
+
+  viewButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+  },
+
+  activeViewButton: {
+    backgroundColor: COLORS.forest,
+  },
+
+  viewButtonText: {
+    fontSize: 17,
+    color: COLORS.muted,
+  },
+
+  activeViewButtonText: {
+    color: COLORS.ivory,
+  },
+
+  sortContainer: {
     width: "100%",
-    maxWidth: 920,
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#263653",
-    marginTop: 25,
-    marginBottom: 12,
+    maxWidth: 1200,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 18,
+    gap: 8,
   },
-  categoryButton: {
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 10,
-    paddingHorizontal: 18,
+
+  sortLabel: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.2,
+    color: COLORS.muted,
+    marginRight: 5,
+  },
+
+  sortButton: {
+    paddingHorizontal: 13,
+    paddingVertical: 7,
     borderRadius: 20,
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: "#DDDDDD",
+    backgroundColor: "#ECEAE2",
   },
-  selectedCategory: {
-    backgroundColor: "#087F70",
-    borderColor: "#087F70",
+
+  activeSortButton: {
+    backgroundColor: COLORS.lightGreen,
   },
-  categoryText: {
-    color: "#333333",
-    fontSize: 14,
+
+  sortButtonText: {
+    fontSize: 11,
+    color: COLORS.muted,
+    fontWeight: "600",
   },
-  selectedCategoryText: {
-    color: "#FFFFFF",
-    fontWeight: "bold",
+
+  activeSortButtonText: {
+    color: COLORS.forest,
   },
-  card: {
+
+  destinationContainer: {
     width: "100%",
-    maxWidth: 920,
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-    borderRadius: 15,
-    marginBottom: 15,
-    shadowColor: "#153C35",
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    maxWidth: 1200,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 18,
   },
+
+  destinationCard: {
+    backgroundColor: COLORS.ivory,
+    borderRadius: 17,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  imageContainer: {
+    width: "100%",
+    height: 190,
+    position: "relative",
+    backgroundColor: COLORS.lightGreen,
+  },
+
+  listImageContainer: {
+    width: "36%",
+    height: 155,
+  },
+
   destinationImage: {
     width: "100%",
-    height: 170,
-    borderRadius: 10,
-    marginBottom: 12,
+    height: "100%",
   },
-  placeName: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#087F70",
+
+  imageBadge: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    backgroundColor: COLORS.ivory,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
-  district: {
-    fontSize: 16,
-    color: "#666666",
-    marginTop: 8,
+
+  imageBadgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: COLORS.forest,
   },
-  category: {
-    fontSize: 15,
-    color: "#333333",
-    marginTop: 5,
+
+  cardContent: {
+    flex: 1,
+    padding: 15,
   },
+
+  destinationName: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: COLORS.forest,
+  },
+
+  districtText: {
+    fontSize: 12,
+    color: COLORS.muted,
+    marginTop: 7,
+  },
+
   description: {
-    fontSize: 14,
-    color: "#555555",
-    marginTop: 8,
-    lineHeight: 20,
+    fontSize: 12,
+    color: "#68766F",
+    lineHeight: 19,
+    marginTop: 10,
   },
+
+  cardFooter: {
+    marginTop: 15,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+
+  detailsText: {
+    fontSize: 12,
+    color: COLORS.green,
+    fontWeight: "800",
+  },
+
   loader: {
-    marginTop: 30,
+    marginTop: 60,
   },
-  noResults: {
-    textAlign: "center",
-    color: "#888888",
-    marginTop: 25,
-    fontSize: 16,
+
+  emptyContainer: {
+    width: "100%",
+    alignItems: "center",
+    paddingVertical: 65,
   },
-  viewDetails: {
-    color: "#087F70",
-    fontWeight: "bold",
-    marginTop: 12,
+
+  emptyIcon: {
+    fontSize: 45,
+    color: COLORS.gold,
+  },
+
+  emptyTitle: {
+    fontSize: 21,
+    fontWeight: "800",
+    color: COLORS.forest,
+    marginTop: 15,
+  },
+
+  emptySubtitle: {
+    fontSize: 13,
+    color: COLORS.muted,
+    marginTop: 8,
+  },
+
+  resetButton: {
+    backgroundColor: COLORS.forest,
+    paddingHorizontal: 20,
+    paddingVertical: 11,
+    borderRadius: 10,
+    marginTop: 20,
+  },
+
+  resetButtonText: {
+    color: COLORS.ivory,
+    fontWeight: "700",
+    fontSize: 12,
   },
 });
