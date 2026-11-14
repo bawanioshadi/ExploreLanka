@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState } from "react";
 
 import {
@@ -11,14 +10,20 @@ import {
 } from "react-native";
 
 import { DestinationImage } from "../../components/destination-image";
+import { addUserDestination } from "../../services/storage";
+import type { DestinationCategory } from "../../types/destination";
 
-const STORAGE_KEY = "user_destinations";
-const categories = ["Nature", "Beach", "Historical", "Wildlife"];
+const categories: DestinationCategory[] = [
+  "Nature",
+  "Beach",
+  "Historical",
+  "Wildlife",
+];
 
 export default function AddPlaceScreen() {
   const [name, setName] = useState("");
   const [district, setDistrict] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState<DestinationCategory | "">("");
   const [description, setDescription] = useState("");
   const [bestTime, setBestTime] = useState("");
   const [entryFee, setEntryFee] = useState("");
@@ -26,16 +31,12 @@ export default function AddPlaceScreen() {
   const [message, setMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
+  // Save a new destination
   const handleSave = async () => {
     setMessage("");
 
     // Validate required fields
-    if (
-      !name.trim() ||
-      !district.trim() ||
-      !category.trim() ||
-      !description.trim()
-    ) {
+    if (!name.trim() || !district.trim() || !category || !description.trim()) {
       setMessage("Please fill in all required fields.");
       return;
     }
@@ -43,35 +44,27 @@ export default function AddPlaceScreen() {
     try {
       setIsSaving(true);
 
-      // Get existing destinations
-      const storedData = await AsyncStorage.getItem(STORAGE_KEY);
-
-      const existingPlaces = storedData ? JSON.parse(storedData) : [];
-
       // Create a new destination
       const newPlace = {
         id: Date.now(),
         name: name.trim(),
         district: district.trim(),
-        category: category.trim(),
+        category,
         description: description.trim(),
         bestTime: bestTime.trim() || "Not specified",
         entryFee: entryFee.trim() || "Not specified",
       };
 
-      // Add new destination to existing list
-      const updatedPlaces = [...existingPlaces, newPlace];
-
-      // Save to local storage
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedPlaces));
+      // Save using centralized storage service
+      await addUserDestination(newPlace);
 
       setMessage("Destination saved successfully!");
 
-      // Clear form
+      // Clear form after successful save
       setName("");
       setDistrict("");
-      setDescription("");
       setCategory("");
+      setDescription("");
       setBestTime("");
       setEntryFee("");
     } catch (error) {
@@ -91,10 +84,14 @@ export default function AddPlaceScreen() {
       <View style={styles.page}>
         <View style={styles.hero}>
           <DestinationImage name="Mirissa" style={styles.heroImage} />
+
           <View style={styles.heroShade} />
+
           <View style={styles.heroCopy}>
             <Text style={styles.eyebrow}>GROW THE GUIDE</Text>
+
             <Text style={styles.heroTitle}>Share a place you love</Text>
+
             <Text style={styles.heroSubtitle}>
               Help other travellers discover Sri Lanka.
             </Text>
@@ -103,9 +100,11 @@ export default function AddPlaceScreen() {
 
         <View style={styles.formCard}>
           <Text style={styles.title}>New destination</Text>
+
           <Text style={styles.subtitle}>Add the details travellers need.</Text>
 
           <Text style={styles.label}>Place Name *</Text>
+
           <TextInput
             style={styles.input}
             placeholder="Enter place name"
@@ -115,6 +114,7 @@ export default function AddPlaceScreen() {
           />
 
           <Text style={styles.label}>District *</Text>
+
           <TextInput
             style={styles.input}
             placeholder="Enter district"
@@ -123,80 +123,87 @@ export default function AddPlaceScreen() {
             autoCapitalize="words"
           />
 
-      <Text style={styles.label}>Category *</Text>
-      <View style={styles.categoryList}>
-        {categories.map((item) => (
-          <Pressable
-            key={item}
-            accessibilityRole="button"
-            accessibilityState={{ selected: category === item }}
-            onPress={() => setCategory(item)}
-            style={[
-              styles.categoryChip,
-              category === item && styles.categoryChipSelected,
-            ]}
-          >
+          <Text style={styles.label}>Category *</Text>
+
+          <View style={styles.categoryList}>
+            {categories.map((item) => (
+              <Pressable
+                key={item}
+                accessibilityRole="button"
+                accessibilityState={{
+                  selected: category === item,
+                }}
+                onPress={() => setCategory(item)}
+                style={[
+                  styles.categoryChip,
+                  category === item && styles.categoryChipSelected,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.categoryChipText,
+                    category === item && styles.categoryChipTextSelected,
+                  ]}
+                >
+                  {item}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.label}>Description *</Text>
+
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="Describe this destination"
+            value={description}
+            onChangeText={setDescription}
+            multiline
+            numberOfLines={4}
+          />
+
+          <Text style={styles.label}>Best Time to Visit</Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Example: December - April"
+            value={bestTime}
+            onChangeText={setBestTime}
+          />
+
+          <Text style={styles.label}>Entry Fee</Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Example: Rs. 500"
+            value={entryFee}
+            onChangeText={setEntryFee}
+          />
+
+          {message !== "" && (
             <Text
+              accessibilityRole="alert"
               style={[
-                styles.categoryChipText,
-                category === item && styles.categoryChipTextSelected,
+                styles.message,
+                message.includes("successfully")
+                  ? styles.successMessage
+                  : styles.errorMessage,
               ]}
             >
-              {item}
+              {message}
+            </Text>
+          )}
+
+          <Pressable
+            style={[styles.button, isSaving && styles.disabledButton]}
+            onPress={handleSave}
+            disabled={isSaving}
+            accessibilityRole="button"
+          >
+            <Text style={styles.buttonText}>
+              {isSaving ? "Saving..." : "Save Destination"}
             </Text>
           </Pressable>
-        ))}
-      </View>
-
-      <Text style={styles.label}>Description *</Text>
-      <TextInput
-        style={[styles.input, styles.textArea]}
-        placeholder="Describe this destination"
-        value={description}
-        onChangeText={setDescription}
-        multiline
-        numberOfLines={4}
-      />
-
-      <Text style={styles.label}>Best Time to Visit</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Example: December - April"
-        value={bestTime}
-        onChangeText={setBestTime}
-      />
-
-      <Text style={styles.label}>Entry Fee</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Example: Rs. 500"
-        value={entryFee}
-        onChangeText={setEntryFee}
-      />
-
-      {message !== "" && (
-        <Text
-          style={[
-            styles.message,
-            message.includes("successfully")
-              ? styles.successMessage
-              : styles.errorMessage,
-          ]}
-        >
-          {message}
-        </Text>
-      )}
-
-      <Pressable
-        style={[styles.button, isSaving && styles.disabledButton]}
-        onPress={handleSave}
-        disabled={isSaving}
-        accessibilityRole="button"
-      >
-        <Text style={styles.buttonText}>
-          {isSaving ? "Saving..." : "Save Destination"}
-        </Text>
-      </Pressable>
         </View>
       </View>
     </ScrollView>
