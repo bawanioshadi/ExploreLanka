@@ -8,7 +8,7 @@ function DestinationTabIcon({
   color,
   size,
 }: {
-  route: "home" | "explore" | "favorites" | "profile";
+  route: "home" | "explore" | "favorites" | "profile" | "add";
   color: ColorValue;
   size: number;
 }) {
@@ -25,17 +25,23 @@ function DestinationTabIcon({
     );
   }
 
+  const symbols = {
+    favorites: "♡",
+    profile: "♙",
+    add: "+",
+  };
+
   return (
     <Text
       style={{
         color,
-        fontSize: size + 3,
-        lineHeight: size + 5,
+        fontSize: route === "add" ? size + 8 : size + 3,
+        lineHeight: size + 10,
         fontWeight: "600",
       }}
       accessibilityLabel={route}
     >
-      {route === "favorites" ? "♡" : "♙"}
+      {symbols[route]}
     </Text>
   );
 }
@@ -75,6 +81,16 @@ export default function TabLayout() {
           title: "Explore",
           tabBarIcon: ({ color, size }) => (
             <DestinationTabIcon route="explore" color={color} size={size} />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="add"
+        options={{
+          title: "Add Place",
+          tabBarIcon: ({ color, size }) => (
+            <DestinationTabIcon route="add" color={color} size={size} />
           ),
         }}
       />

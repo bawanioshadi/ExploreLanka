@@ -10,6 +10,7 @@ import {
 } from "react-native";
 
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { DestinationImage } from "../../components/destination-image";
@@ -65,6 +66,7 @@ export default function ExploreScreen() {
   const loadUserPlaces = useCallback(async () => {
     try {
       setLoading(true);
+
       const storedPlaces = await getUserDestinations();
       setUserPlaces(storedPlaces);
     } catch (error) {
@@ -112,6 +114,13 @@ export default function ExploreScreen() {
     router.push(`/place/${id}`);
   };
 
+  // Navigate to Add Destination screen
+  const openAddPlace = () => {
+    router.push({
+      pathname: "/(tabs)/add",
+    });
+  };
+
   return (
     <ScrollView
       style={styles.container}
@@ -122,13 +131,15 @@ export default function ExploreScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.eyebrow}>DISCOVER THE ISLAND</Text>
+
           <Text style={styles.pageTitle}>Explore Sri Lanka</Text>
+
           <Text style={styles.headerSubtitle}>
             Find places worth remembering.
           </Text>
         </View>
 
-        <Pressable style={styles.addButton} onPress={() => router.push("/add")}>
+        <Pressable style={styles.addButton} onPress={openAddPlace}>
           <Text style={styles.addButtonText}>+ Add Place</Text>
         </Pressable>
       </View>
@@ -136,6 +147,7 @@ export default function ExploreScreen() {
       {/* Search */}
       <View style={styles.searchContainer}>
         <Text style={styles.searchIcon}>⌕</Text>
+
         <TextInput
           style={styles.searchInput}
           placeholder="Search destinations or districts..."
@@ -187,10 +199,11 @@ export default function ExploreScreen() {
         })}
       </ScrollView>
 
-      {/* Results header */}
+      {/* Results Header */}
       <View style={styles.resultsHeader}>
         <View>
           <Text style={styles.sectionTitle}>Destinations</Text>
+
           <Text style={styles.resultsSubtitle}>
             {filteredPlaces.length} places to discover
           </Text>
@@ -258,7 +271,7 @@ export default function ExploreScreen() {
         ))}
       </View>
 
-      {/* Destination cards */}
+      {/* Destination Cards */}
       {loading ? (
         <ActivityIndicator
           size="large"
@@ -322,7 +335,9 @@ export default function ExploreScreen() {
       ) : (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>⌕</Text>
+
           <Text style={styles.emptyTitle}>No places found</Text>
+
           <Text style={styles.emptySubtitle}>
             Try another search or category.
           </Text>
